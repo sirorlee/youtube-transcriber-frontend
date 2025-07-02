@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Transcriber - 99+ Languages | Convert YouTube Videos to Text</title>
+    <meta name="description" content="Free YouTube transcriber supporting 99+ languages. Convert YouTube videos to text instantly using AI. Download transcripts in multiple formats.">
+    <meta name="keywords" content="YouTube transcriber, video to text, YouTube transcript, multilingual transcription, AI transcription">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://your-site.vercel.app/">
+    <meta property="og:title" content="YouTube Transcriber - 99+ Languages">
+    <meta property="og:description" content="Convert YouTube videos to text instantly using AI. Support for 99+ languages.">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://your-site.vercel.app/">
+    <meta property="twitter:title" content="YouTube Transcriber - 99+ Languages">
+    <meta property="twitter:description" content="Convert YouTube videos to text instantly using AI. Support for 99+ languages.">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌐</text></svg>">
+    
+    <!-- React and Required Libraries -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- Custom Styles -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+        ::-webkit-scrollbar-thumb { background: rgba(147,51,234,0.5); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(147,51,234,0.7); }
+        
+        /* Loading animation */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        const { Upload, Download, Globe, FileText, Mic, Settings, Languages, Zap, Check, AlertCircle, Clock } = lucide;
+
+        // ⚠️ IMPORTANT: Replace this with your Railway backend URL
+        const API_BASE_URL = 'https://your-railway-app.railway.app';
+
+        const YouTubeTranscriber = () => {
+          const [url, setUrl] = useState('');
+          const [file, setFile] = useState(null);
+          const [isProcessing, setIsProcessing] = useState(false);
+          const [progress, setProgress] = useState(0);
+          const [currentStep, setCurrentStep] = useState('');
+          const [results, setResults] = useState(null);
+          const [jobId, setJobId] = useState(null);
+          const [selectedLanguages, setSelectedLanguages] = useState(['en']);
+          const [sourceLanguage, setSourceLanguage] = useState('auto');
+          const [selectedFormats, setSelectedFormats] = useState(['txt', 'srt']);
+          const [showAdvanced, setShowAdvanced] = useState(false);
+          const [backendStatus, setBackendStatus] = useState('checking');
+          const fileInputRef = useRef(null);
+
+          // Complete list of 99+ languages supported by Whisper AI
+          const languages = [
+            { code: 'auto', name: 'Auto-detect', flag: '🌐' },
+            { code: 'en', name: 'English', flag: '🇺🇸' },
+            { code: 'zh', name: 'Chinese (Mandarin)', flag: '🇨🇳' },
+            { code: 'es', name: 'Spanish', flag: '🇪🇸' },
+            { code: 'hi', name: 'Hindi', flag: '🇮🇳' },
+            { code: 'ar', name: 'Arabic', flag: '🇸🇦' },
+            { code: 'pt', name: 'Portuguese', flag: '🇵🇹' },
+            { code: 'bn', name: 'Bengali', flag: '🇧🇩' },
+            { code: 'ru', name: 'Russian', flag: '🇷🇺' },
+            { code: 'ja', name: 'Japanese', flag: '🇯🇵' },
+            { code: 'pa', name: 'Punjabi', flag: '🇮🇳' },
+            { code: 'de', name: 'German', flag: '🇩🇪' },
+            { code: 'jv', name: 'Javanese', flag: '🇮🇩' },
+            { code: 'wu', name: 'Wu Chinese', flag: '🇨🇳' },
+            { code: 'ms', name: 'Malay', flag: '🇲🇾' },
+            { code: 'te', name: 'Telugu', flag: '🇮🇳' },
+            { code: 'vi', name: 'Vietnamese', flag: '🇻🇳' },
+            { code: 'ko', name: 'Korean', flag: '🇰🇷' },
+            { code: 'fr', name: 'French', flag: '🇫🇷' },
+            { code: 'mr', name: 'Marathi', flag: '🇮🇳' },
+            { code: 'ta', name: 'Tamil', flag: '🇮🇳' },
+            { code: 'ur', name: 'Urdu', flag: '🇵🇰' },
+            { code: 'gu', name: 'Gujarati', flag: '🇮🇳' },
+            { code: 'tr', name: 'Turkish', flag: '🇹🇷' },
+            { code: 'it', name: 'Italian', flag: '🇮🇹' },
+            { code: 'th', name: 'Thai', flag: '🇹🇭' },
+            { code: 'pl', name: 'Polish', flag: '🇵🇱' },
+            { code: 'ca', name: 'Catalan', flag: '🇪🇸' },
+            { code: 'nl', name: 'Dutch', flag: '🇳🇱' },
+            { code: 'sv', name: 'Swedish', flag: '🇸🇪' },
+            { code: 'no', name: 'Norwegian', flag: '🇳🇴' },
+            { code: 'da', name: 'Danish', flag: '🇩🇰' },
+            { code: 'fi', name: 'Finnish', flag: '🇫🇮' },
+            { code: 'cs', name: 'Czech', flag: '🇨🇿' },
+            { code: 'hu', name: 'Hungarian', flag: '🇭🇺' },
+            { code: 'ro', name: 'Romanian', flag: '
